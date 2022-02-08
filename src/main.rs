@@ -58,34 +58,33 @@ fn main() -> Result<(), Error> {
     }
 
     let passwords = load_leaked_passwords(PathBuf::from(&args[1]))?;
-    let dictionary = load_dictionary(PathBuf::from(&args[2]))?;
-
-    dictionary
+    let dictionary: Vec<String> = load_dictionary(PathBuf::from(&args[2]))?
         .filter_map(|w| w.ok())
-        .par_bridge()
-        .for_each(|word: String| {
-            let mut solved: Vec<String> = Vec::new();
+        .collect();
 
-            if passwords.is_empty() {
-                eprintln!("All done");
-                return;
+    dictionary.par_iter().for_each(|word| {
+        let mut solved: Vec<String> = Vec::new();
+
+        if passwords.is_empty() {
+            eprintln!("All done");
+            return;
+        }
+
+        for item in passwords.iter() {
+            let k = item.key();
+            let v = item.value();
+
+            if hash(&word).unwrap() == *v {
+                println!("Hash {} for user {} is password '{}'", v, k, word);
+                eprintln!("{} hashes remaining", passwords.len());
+                solved.push(k.to_string());
             }
+        }
 
-            for item in passwords.iter() {
-                let k = item.key();
-                let v = item.value();
-
-                if hash(&word).unwrap() == *v {
-                    println!("Hash {} for user {} is password '{}'", v, k, word);
-                    eprintln!("{} hashes remaining", passwords.len());
-                    solved.push(k.to_string());
-                }
-            }
-
-            for s in solved {
-                passwords.remove(&s);
-            }
-        });
+        for s in solved {
+            passwords.remove(&s);
+        }
+    });
 
     Ok(())
 }
