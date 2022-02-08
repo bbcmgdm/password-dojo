@@ -44,3 +44,19 @@ real    1m48.583s
 user    11m12.174s
 sys     0m7.286s
 ```
+
+### Linux machine, AMD Ryzen 7 5700G, 3.8-4.5GHz
+
+#### Single-threaded
+```
+real    0m33.990s
+user    0m33.790s
+sys     0m0.200s
+```
+
+#### Concurrent
+```
+real    0m13.793s
+user    3m40.330s
+sys     0m0.189s
+```
