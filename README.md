@@ -1,6 +1,12 @@
 This is an attempt at the password cracking dojo using Rust.
 
-It uses a word list loaded from a file, provided as a command line argument. 
+It uses a word list loaded from a file, provided as a command line argument.
+
+```shell
+$ cargo run --release -- leaked_passwords_v1.txt wordlist.txt
+# or perhaps, after a `cargo build --release`
+$ ./target/release/password-dojo leaked_passwords_v1.txt wordlist.txt
+```
 
 ## Single-threaded version
 
