@@ -20,6 +20,8 @@ Because the hashing algorithm removes so much entropy from the password, it will
 
 To make this concurrent, I used the [Rayon](https://github.com/rayon-rs/rayon) concurrency library, and replaced the `HashMap` with a [`DashMap`](https://docs.rs/dashmap/latest/dashmap/). This is a library that provides a data structure fairly similar to the `HashMap` from the standard library but with better support for concurrency. This version splits the incoming word list into several threads managed by Rayon, which defaults to one per CPU core. It can complete much quicker than the single-threaded one, and the output is similar although in a different order from the single-threaded version.
 
+Because the concurrent version uses several threads, and Rust's ownership model doesn't allow several of them to modify the `progress` variable at once, I had to remove the progress notifications from this version to avoid having to add complex code involving mutexes or that kind of thing which would be slower and not really warranted.
+
 ## Speed
 
 All of these tests use the [`rockyou` word list](https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt), which finds passwords for 60 of the leaked hashes.
