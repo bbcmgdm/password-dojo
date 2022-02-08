@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     env,
     fs::File,
     io::{self, BufRead, BufReader, Error},
@@ -7,6 +6,10 @@ use std::{
     process,
     string::FromUtf8Error,
 };
+
+use rayon::prelude::*;
+
+use dashmap::DashMap;
 
 fn hash(input: &str) -> Result<String, FromUtf8Error> {
     let stripped = input
@@ -28,10 +31,10 @@ fn hash(input: &str) -> Result<String, FromUtf8Error> {
     String::from_utf8(as_nums.iter().map(|c| (c + 65) as u8).collect())
 }
 
-fn load_leaked_passwords(filename: PathBuf) -> Result<HashMap<String, String>, Error> {
+fn load_leaked_passwords(filename: PathBuf) -> Result<DashMap<String, String>, Error> {
     let f = File::open(filename)?;
     let r = BufReader::new(f);
-    let mut passwords: HashMap<String, String> = HashMap::new();
+    let passwords: DashMap<String, String> = DashMap::new();
 
     for l in r.lines() {
         let l = l?;
@@ -54,33 +57,35 @@ fn main() -> Result<(), Error> {
         process::exit(1);
     }
 
-    let mut passwords = load_leaked_passwords(PathBuf::from(&args[1]))?;
+    let passwords = load_leaked_passwords(PathBuf::from(&args[1]))?;
     let dictionary = load_dictionary(PathBuf::from(&args[2]))?;
-    let mut progress = 0;
 
-    for word in dictionary.map(Result::unwrap) {
-        let mut solved: Vec<String> = Vec::new();
+    dictionary
+        .filter_map(|w| w.ok())
+        .par_bridge()
+        .for_each(|word: String| {
+            let mut solved: Vec<String> = Vec::new();
 
-        if passwords.is_empty() {
-            eprintln!("All done");
-        }
-
-        for (k, v) in passwords.iter() {
-            if hash(&word).unwrap() == *v {
-                println!("Hash {} for user {} is password '{}'", v, k, word);
-                solved.push(k.to_string());
+            if passwords.is_empty() {
+                eprintln!("All done");
+                return;
             }
-        }
 
-        for s in solved {
-            passwords.remove(&s);
-        }
+            for item in passwords.iter() {
+                let k = item.key();
+                let v = item.value();
 
-        progress += 1;
-        if progress % 1000 == 0 {
-            eprintln!("Completed {} words with {} hashes remaining", progress, passwords.len());
-        }
-    }
+                if hash(&word).unwrap() == *v {
+                    println!("Hash {} for user {} is password '{}'", v, k, word);
+                    eprintln!("{} hashes remaining", passwords.len());
+                    solved.push(k.to_string());
+                }
+            }
+
+            for s in solved {
+                passwords.remove(&s);
+            }
+        });
 
     Ok(())
 }
