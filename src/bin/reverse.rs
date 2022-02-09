@@ -11,7 +11,7 @@ fn reverse(hash: &str) -> Result<String, Box<dyn Error>> {
         as_nums[i] = (as_nums[i] - as_nums[i - 1]).rem_euclid(26);
     }
 
-    as_nums[0] -= 3;
+    as_nums[0] = (as_nums[0] - 3).rem_euclid(26);
     Ok(String::from_utf8(
         as_nums.iter().map(|c| (c + 65) as u8).collect(),
     )?)
