@@ -36,8 +36,7 @@ fn load_leaked_passwords(filename: PathBuf) -> Result<DashMap<String, String>, E
     let r = BufReader::new(f);
     let passwords: DashMap<String, String> = DashMap::new();
 
-    for l in r.lines() {
-        let l = l?;
+    for l in r.lines().filter_map(|l| l.ok()) {
         let s: Vec<&str> = l.trim().split(",").collect();
         passwords.insert(s[0].to_string(), s[1].to_string());
     }
