@@ -37,7 +37,7 @@ fn load_leaked_passwords(filename: PathBuf) -> Result<DashMap<String, String>, E
     let passwords: DashMap<String, String> = DashMap::new();
 
     for l in r.lines().filter_map(|l| l.ok()) {
-        let s: Vec<&str> = l.trim().split(",").collect();
+        let s: Vec<&str> = l.trim().split(',').collect();
         passwords.insert(s[0].to_string(), s[1].to_string());
     }
 
@@ -73,7 +73,7 @@ fn main() -> Result<(), Error> {
             let k = item.key();
             let v = item.value();
 
-            if hash(&word).unwrap() == *v {
+            if hash(word).unwrap() == *v {
                 println!("Hash {} for user {} is password '{}'", v, k, word);
                 eprintln!("{} hashes remaining", passwords.len());
                 solved.push(k.to_string());
