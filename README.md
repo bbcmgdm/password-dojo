@@ -47,7 +47,7 @@ sys     0m7.286s
 
 ### Linux machine, AMD Ryzen 7 5700G, 3.8-4.5GHz, 8 physical/16 logical cores
 
-I've found this might be a bit prone to deadlock. Debugging that is a work in progress. When it runs, it really goes.
+The initial version of this was a bit prone to deadlock, but I believe this is resolved now.
 
 #### Single-threaded
 ```
