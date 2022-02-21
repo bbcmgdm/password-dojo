@@ -1,4 +1,4 @@
-This is an attempt at the password cracking dojo using Rust.
+This is an attempt at the password cracking dojo using Rust. Turns out based on the other Rust entry this was probably the wrong algorithm to choose, but it was fun anyway :-)
 
 It uses a word list loaded from a file, provided as a command line argument.
 
