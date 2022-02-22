@@ -1,15 +1,13 @@
 use std::{
     env,
     fs::File,
-    io::{self, BufRead, BufReader, Error},
+    io::{BufRead, BufReader, Error},
     path::PathBuf,
     process,
-    string::FromUtf8Error,
+    string::FromUtf8Error, collections::{BTreeMap, HashMap},
 };
 
-use rayon::prelude::*;
-
-use dashmap::DashMap;
+// use dashmap::DashMap;
 
 fn hash(input: &str) -> Result<String, FromUtf8Error> {
     let stripped = input
@@ -31,10 +29,10 @@ fn hash(input: &str) -> Result<String, FromUtf8Error> {
     String::from_utf8(as_nums.iter().map(|c| (c + 65) as u8).collect())
 }
 
-fn load_leaked_passwords(filename: PathBuf) -> Result<DashMap<String, String>, Error> {
+fn load_leaked_passwords(filename: PathBuf) -> Result<HashMap<String, String>, Error> {
     let f = File::open(filename)?;
     let r = BufReader::new(f);
-    let passwords: DashMap<String, String> = DashMap::new();
+    let mut passwords: HashMap<String, String> = HashMap::new();
 
     for l in r.lines().filter_map(|l| l.ok()) {
         let s: Vec<&str> = l.trim().split(",").collect();
@@ -44,9 +42,19 @@ fn load_leaked_passwords(filename: PathBuf) -> Result<DashMap<String, String>, E
     Ok(passwords)
 }
 
-fn load_dictionary(filename: PathBuf) -> Result<io::Lines<io::BufReader<File>>, Error> {
+fn load_dictionary(filename: PathBuf) -> Result<BTreeMap<String, String>, Error> {
     let f = File::open(filename)?;
-    Ok(io::BufReader::new(f).lines())
+    let r = BufReader::new(f);
+    let mut dict: BTreeMap<String, String> = BTreeMap::new();
+
+    for l in r.lines().filter_map(|l| l.ok()) {
+        let h = hash(&l).unwrap();
+
+        // eprintln!("{:?} {:?}", l, h);
+        dict.insert(h, l);
+    }
+
+    Ok(dict)
 }
 
 fn main() -> Result<(), Error> {
@@ -56,35 +64,21 @@ fn main() -> Result<(), Error> {
         process::exit(1);
     }
 
+    eprintln!("Loading leaked passwords");
     let passwords = load_leaked_passwords(PathBuf::from(&args[1]))?;
-    let dictionary: Vec<String> = load_dictionary(PathBuf::from(&args[2]))?
-        .filter_map(|w| w.ok())
-        .collect();
 
-    dictionary.par_iter().for_each(|word| {
-        let mut solved: Vec<String> = Vec::new();
+    eprintln!("Loading dictionary");
+    let dictionary: BTreeMap<String, String> = load_dictionary(PathBuf::from(&args[2]))?;
 
-        if passwords.is_empty() {
-            eprintln!("All done");
-            return;
+    eprintln!("Checking for matches");
+    for (k, v) in passwords.iter() {
+        // println!("{} {}", k, v);
+        if dictionary.contains_key(v) {
+            println!("Hash {} for user {} is password '{}'", v, k, dictionary.get(v).unwrap());
         }
+    }
 
-        for item in passwords.iter() {
-            let k = item.key();
-            let v = item.value();
-
-            if hash(&word).unwrap() == *v {
-                println!("Hash {} for user {} is password '{}'", v, k, word);
-                eprintln!("{} hashes remaining", passwords.len());
-                solved.push(k.to_string());
-            }
-        }
-
-        for s in solved {
-            passwords.remove(&s);
-        }
-    });
-
+    eprintln!("Done");
     Ok(())
 }
 
